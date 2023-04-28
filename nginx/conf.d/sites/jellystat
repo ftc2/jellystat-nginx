@@ -1,0 +1,53 @@
+upstream jellystat {
+    server jellystat:3000;
+    keepalive 32;
+}
+
+server {
+    listen 8989 default_server;
+    server_name _;
+
+    # uncomment this to use without subpath
+    # location / {
+    #     proxy_pass http://jellystat/;
+
+    #     # clear the Connection header so the client can't close the connection.
+    #     # otherwise there's probably no point in using keepalive upstream.
+    #     proxy_set_header Connection "";
+    #     proxy_set_header Host $http_host;
+    #     proxy_set_header X-Real-IP $remote_addr;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
+    #     proxy_buffers 256 16k;
+    #     proxy_buffer_size 16k;
+    #     proxy_read_timeout 600s;
+    #     proxy_http_version 1.1;
+    # }
+
+    # unneeded if location ends in trailing slash – it does in this file :)
+    # location /app/jellystat {
+    #     return 301 /app/jellystat/;
+    # }
+
+    location /app/jellystat/ {
+        # 1) with proxy_pass trailing slash, jellystat would need to use relative URLs for everything
+        # i.e. requests to /app/jellystat/foo will map to /foo
+        proxy_pass http://jellystat/;
+
+        # 2) without proxy_pass trailing slash, jellystat would need to be aware of the /app/jellystat subpath and serve assets there
+        # this would involve a configurable option in jellystat itself
+        # proxy_pass http://jellystat;
+
+        # clear the Connection header so the client can't close the connection.
+        # otherwise there's probably no point in using keepalive upstream.
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffers 256 16k;
+        proxy_buffer_size 16k;
+        proxy_read_timeout 600s;
+        proxy_http_version 1.1;
+    }
+}

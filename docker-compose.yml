@@ -1,0 +1,53 @@
+services:
+  jellystat:
+    image: cyfershepard/jellystat:latest
+    restart: ${RESTART_POLICY}
+    depends_on:
+      - db
+    networks:
+      - wan
+      - db
+    ports:
+      - "${JS_PORT:-3000}:3000"
+    environment:
+      - TZ
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_IP
+      - POSTGRES_PORT
+      - JWT_SECRET
+  db:
+    image: postgres:15-alpine
+    restart: ${RESTART_POLICY}
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    networks:
+      - db
+    environment:
+      - TZ
+      # initial superuser + db creation (only POSTGRES_PASSWORD is required)
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    volumes:
+      - ./jellystat/db:/var/lib/postgresql/data
+  nginx:
+    image: nginx:alpine
+    restart: ${RESTART_POLICY}
+    ports:
+      - "${NGINX_HTTP_PORT:-8989}:8989"
+    networks:
+      - wan
+    environment:
+      - TZ
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+networks:
+  wan:
+  db:
+    internal: true
